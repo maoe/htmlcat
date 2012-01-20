@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, QuasiQuotes, OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables, QuasiQuotes, OverloadedStrings #-}
 {-# OPTIONS -Wall #-}
 module Main where
 import Control.Concurrent (Chan, newChan, writeChan, forkIO)
