@@ -1,5 +1,5 @@
 name:                htmlcat
-version:             0.0.1
+version:             0.0.1.1
 homepage:            https://github.com/maoe/htmlcat
 license:             BSD3
 license-file:        LICENSE
@@ -22,7 +22,7 @@ executable htmlcat
                    , http-types >= 0.6 && < 0.7
                    , mtl >= 2 && < 3
                    , network >= 2.3 && < 2.4
-                   , process >= 1.1 && < 1.2
+                   , process >= 1.0 && < 1.2
                    , text >= 0.11 && < 0.12
                    , wai >= 1.0 && < 1.1
                    , wai-eventsource >= 1.0 && < 1.1
