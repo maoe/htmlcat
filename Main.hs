@@ -8,13 +8,15 @@ import Data.Foldable (forM_)
 import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import Network (PortID(..), listenOn, sClose)
-import System.IO (stdin, stdout)
+import System.IO (stdin)
 import System.Process (rawSystem)
+import qualified Data.Text as T
+import Prelude hiding (lines)
 
 import Blaze.ByteString.Builder.Char.Utf8 (fromText)
-import Data.Conduit (($$), (=$), ($=), ResourceIO, Source, Sink, SinkResult(..), Conduit, runResourceT, sinkIO)
-import Data.Conduit.Binary (sourceHandle, sinkHandle)
-import Data.Conduit.Text (encode, decode, utf8)
+import Data.Conduit (($$), (=$), ($=), (=$=), ResourceIO, Source, Sink, SinkResult(..), Conduit, runResourceT, sinkIO)
+import Data.Conduit.Binary (sourceHandle)
+import Data.Conduit.Text (decode, utf8)
 import Network.HTTP.Types (headerContentType, statusOK, statusNotFound)
 import Network.Wai (Application, Request(..), Response(..), responseLBS)
 import Network.Wai.EventSource (ServerEvent(..), eventSourceApp)
@@ -27,12 +29,12 @@ import qualified Data.Conduit.List as CL
 main :: IO ()
 main = do
   HtmlCat {..} <- cmdArgs htmlCat
-  chan <- newChan
   port <- newPort _port
   let url = "http://" ++ _host ++ ":" ++ show port
   putStrLn url
   whenJust _exec $ \exec ->
     forkIO $ void $ rawSystem exec [url]
+  chan <- newChan
   runSettings (defaultSettings { settingsHost = _host
                                , settingsPort = port })
               (app chan)
@@ -68,7 +70,7 @@ appTop _ = return $
 appStream :: Chan ServerEvent -> Application
 appStream chan req = do
   lift . void . forkIO . runResourceT $
-    sourceStdIn $$ textToEventSource =$ sinkChan chan
+    sourceStdIn $$ (lines =$= textsToEventSource) =$ sinkChan chan
   eventSourceApp chan req
 
 app404 :: Application
@@ -77,15 +79,15 @@ app404 _ = return $ responseLBS statusNotFound [] "Not found"
 sourceStdIn :: ResourceIO m => Source m Text
 sourceStdIn = sourceHandle stdin $= decode utf8
 
-sinkStdOut :: ResourceIO m => Sink Text m ()
-sinkStdOut = encode utf8 =$ sinkHandle stdout
+lines :: Monad m => Conduit Text m [Text]
+lines = CL.map T.lines
 
-textToEventSource :: Monad m => Conduit Text m ServerEvent
-textToEventSource = CL.map f
+textsToEventSource :: Monad m => Conduit [Text] m ServerEvent
+textsToEventSource = CL.map f
   where
-    f text = ServerEvent { eventName = Nothing
-                         , eventId = Nothing
-                         , eventData = [fromText text] }
+    f texts = ServerEvent { eventName = Nothing
+                          , eventId   = Nothing
+                          , eventData = map fromText texts }
 
 sinkChan :: ResourceIO m => Chan a -> Sink a m ()
 sinkChan chan = sinkIO noop (const noop) push return
