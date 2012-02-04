@@ -1,0 +1,15 @@
+[04/Feb/2012:18:42:17 +0900] Server.httpServe: START (EventLoopSimple)
+[04/Feb/2012:18:42:59 +0900] Server.httpServe: SHUTDOWN
+[04/Feb/2012:18:42:59 +0900] Server.httpServe: BACKEND STOPPED
+[04/Feb/2012:18:42:59 +0900] httpSession caught an exception during sending response phase:
+During processing of request from 127.0.0.1:59943
+request:
+"Request <\n    server-name: 127.0.0.1\n    remote: 127.0.0.1:59943\n    local: 127.0.0.1:45192\n    Headers:\n      ========================================\n          User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.77 Safari/535.7\n Referer: http://127.0.0.1:45192/\n Accept-Charset: UTF-8,*;q=0.5\n Accept-Language: ja,en-US;q=0.8,en;q=0.6\n Accept: text/event-stream\n Host: 127.0.0.1:45192\n Cache-Control: no-cache\n Connection: keep-alive\n Accept-Encoding: gzip,deflate,sdch\n      ========================================\n    content-length: Nothing\n    method: GET\n    version: (1,1)\n    cookies:\n      ========================================\n      \n      ========================================\n    pathinfo: stream\n    contextpath: /\n    snapletpath: \n    URI: /stream\n    params:\n      ========================================\n      \n      ========================================\n>"
+A web handler threw an exception. Details:
+thread killed
+[04/Feb/2012:18:42:59 +0900] httpSession caught an exception during sending response phase:
+During processing of request from 127.0.0.1:59944
+request:
+"Request <\n    server-name: 127.0.0.1\n    remote: 127.0.0.1:59944\n    local: 127.0.0.1:45192\n    Headers:\n      ========================================\n          User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.77 Safari/535.7\n Referer: http://127.0.0.1:45192/\n Accept-Charset: UTF-8,*;q=0.5\n Accept-Language: ja,en-US;q=0.8,en;q=0.6\n Accept: text/event-stream\n Host: 127.0.0.1:45192\n Cache-Control: no-cache\n Connection: keep-alive\n Accept-Encoding: gzip,deflate,sdch\n      ========================================\n    content-length: Nothing\n    method: GET\n    version: (1,1)\n    cookies:\n      ========================================\n      \n      ========================================\n    pathinfo: stream\n    contextpath: /\n    snapletpath: \n    URI: /stream\n    params:\n      ========================================\n      \n      ========================================\n>"
+A web handler threw an exception. Details:
+thread killed

@@ -1,5 +1,5 @@
 name:                htmlcat
-version:             0.0.2
+version:             0.1.0
 homepage:            https://github.com/maoe/htmlcat
 license:             BSD3
 license-file:        LICENSE
@@ -9,25 +9,39 @@ category:            System
 build-type:          Simple
 cabal-version:       >=1.2
 
+flag snap
+  default:           False
 
 executable htmlcat
   main-is:           Main.hs
+  other-modules:     HtmlCat.Html
   ghc-options:       -Wall -O2
+
   build-depends:     base >= 4
                    , blaze-builder >= 0.3 && < 0.4
                    , blaze-html >= 0.4 && < 0.5
                    , cmdargs >= 0.9 && < 0.10
-                   , conduit >= 0.1 && < 0.2
                    , hamlet >= 0.10 && < 0.11
-                   , http-types >= 0.6 && < 0.7
                    , mtl >= 2 && < 3
                    , network >= 2.3 && < 2.4
                    , process >= 1.0 && < 1.2
                    , text >= 0.11 && < 0.12
+  if flag (snap)
+    other-modules:   HtmlCat.Snap
+                     Snap.EventSource
+    ghc-options:     -fspec-constr-count=10
+    cpp-options:     -DSNAP
+    build-depends:   bytestring == 0.9.*
+                   , enumerator >= 0.4.18 && < 0.5
+                   , snap-core == 0.7.*
+                   , snap-server == 0.7.*
+  else
+    other-modules:   HtmlCat.Wai
+    build-depends:   conduit >= 0.1 && < 0.2
+                   , http-types >= 0.6 && < 0.7
                    , wai >= 1.0 && < 1.1
                    , wai-eventsource >= 1.0 && < 1.1
                    , warp >= 1.0 && < 1.1
-
 
 source-repository head
   type:              git
