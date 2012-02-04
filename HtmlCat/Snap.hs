@@ -6,7 +6,6 @@ import Control.Monad.Trans (MonadIO(..))
 import Data.Text (Text)
 import System.IO (stdin)
 import qualified Data.ByteString.Char8 as B8
-import qualified Data.Text as T
 
 import Data.Enumerator (Iteratee, Enumeratee, ($$), ($=))
 import Snap.Core
@@ -50,7 +49,7 @@ textsToEventSource = E.map f
   where
     f text = ServerEvent { eventName = Nothing
                          , eventId   = Nothing
-                         , eventData = [B.fromText $ T.stripEnd text] }
+                         , eventData = [B.fromText text] }
 
 sinkChan :: MonadIO m => Chan a -> Iteratee a m ()
 sinkChan chan = E.foldM go ()
