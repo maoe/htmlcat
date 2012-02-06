@@ -17,7 +17,7 @@ executable htmlcat
   other-modules:     HtmlCat.Html
   ghc-options:       -Wall -O2
 
-  build-depends:     base >= 4
+  build-depends:     base >= 4.3
                    , blaze-builder >= 0.3 && < 0.4
                    , blaze-html >= 0.4 && < 0.5
                    , cmdargs >= 0.9 && < 0.10
@@ -26,6 +26,8 @@ executable htmlcat
                    , network >= 2.3 && < 2.4
                    , process >= 1.0 && < 1.2
                    , text >= 0.11 && < 0.12
+                   , attoparsec >= 0.10 && < 0.11
+                   , containers >= 0.4 && < 0.5
   if flag (snap)
     other-modules:   HtmlCat.Snap
                      Snap.EventSource
@@ -37,11 +39,11 @@ executable htmlcat
                    , snap-server == 0.7.*
   else
     other-modules:   HtmlCat.Wai
-    build-depends:   conduit >= 0.1 && < 0.2
+    build-depends:   conduit >= 0.2 && < 0.3
                    , http-types >= 0.6 && < 0.7
-                   , wai >= 1.0 && < 1.1
-                   , wai-eventsource >= 1.0 && < 1.1
-                   , warp >= 1.0 && < 1.1
+                   , wai >= 1.1 && < 1.2
+                   , wai-eventsource >= 1.1 && < 1.2
+                   , warp >= 1.1 && < 1.2
 
 source-repository head
   type:              git

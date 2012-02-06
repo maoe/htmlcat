@@ -7,7 +7,6 @@ import Data.Foldable (forM_)
 import Data.Maybe (maybeToList)
 import Network (PortID(..), listenOn, sClose)
 import System.Process (rawSystem)
-
 import System.Console.CmdArgs
 
 #ifdef SNAP
@@ -15,6 +14,8 @@ import HtmlCat.Snap
 #else
 import HtmlCat.Wai
 #endif
+
+import HtmlCat.Color (ColorScheme(..))
 
 main :: IO ()
 main = do
@@ -25,8 +26,8 @@ main = do
   whenJust _exec $ \exec ->
     forkIO $ void $ rawSystem exec [url]
   chan <- newChan
-  feedStdIn chan
-  runHtmlCat chan _host port
+  feedStdIn chan _cols
+  runHtmlCat chan _host port _cols
   where
     whenJust = forM_
 
@@ -47,11 +48,13 @@ data HtmlCat = HtmlCat
   { _port :: Maybe Int
   , _host :: String
   , _exec :: Maybe String
+  , _cols :: ColorScheme
   } deriving (Show, Data, Typeable)
 
 htmlCat :: HtmlCat
 htmlCat = HtmlCat
-  { _port = Nothing     &= explicit &= name "port"
-  , _host = "127.0.0.1" &= explicit &= name "host"
-  , _exec = Nothing     &= explicit &= name "exec"
+  { _port = Nothing         &= explicit &= name "port"
+  , _host = "127.0.0.1"     &= explicit &= name "host"
+  , _exec = Nothing         &= explicit &= name "exec"
+  , _cols = WhiteBackground &= explicit &= name "color" &= name "c"
   }
