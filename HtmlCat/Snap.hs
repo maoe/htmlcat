@@ -4,6 +4,7 @@ import Control.Concurrent (Chan, writeChan, forkIO)
 import Control.Monad (void)
 import Control.Monad.Trans (MonadIO(..))
 import Data.Text (Text)
+import Data.Tuple (swap)
 import System.IO (stdin)
 import qualified Data.ByteString.Char8 as B8
 
@@ -14,16 +15,16 @@ import Snap.Http.Server.Config
 import Text.Blaze.Renderer.Utf8 (renderHtmlBuilder)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as B
 import qualified Data.Enumerator as E (run_)
-import qualified Data.Enumerator.List as E (map, foldM)
+import qualified Data.Enumerator.List as E (map, foldM, mapAccum)
 import qualified Data.Enumerator.Text as E (enumHandle)
 
 import HtmlCat.Html (html)
-import HtmlCat.Color (ColorScheme(..))
+import HtmlCat.Color (parseConsoleString, defaultConsoleState, ConsoleState(..), runHtml, ColorScheme(..))
 import Snap.EventSource (ServerEvent(..), eventSourceApp)
 
 feedStdIn :: Chan ServerEvent -> ColorScheme -> IO ()
-feedStdIn chan _ = void . forkIO $ E.run_ $
-  sourceStdIn $= textsToEventSource $$ sinkChan chan
+feedStdIn chan cols = void . forkIO $ E.run_ $
+  sourceStdIn $= colorConv cols $= textsToEventSource $$ sinkChan chan
 
 runHtmlCat :: Chan ServerEvent -> String -> Int -> ColorScheme -> IO ()
 runHtmlCat chan host port cols =
@@ -44,6 +45,11 @@ appStream = eventSourceApp
 
 sourceStdIn :: MonadIO m => Enumerator Text m a
 sourceStdIn = E.enumHandle stdin
+
+colorConv :: MonadIO m => ColorScheme -> Enumeratee Text Text m a
+colorConv cols = E.mapAccum f defaultConsoleState { colorScheme = cols }
+  where
+    f state text = swap $ runHtml state $ parseConsoleString text
 
 textsToEventSource :: Monad m => Enumeratee Text ServerEvent m a
 textsToEventSource = E.map f
