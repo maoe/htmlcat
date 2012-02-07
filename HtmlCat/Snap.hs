@@ -4,7 +4,6 @@ import Control.Concurrent (Chan, writeChan, forkIO)
 import Control.Monad (void)
 import Control.Monad.Trans (MonadIO(..))
 import Data.Text (Text)
-import Data.Tuple (swap)
 import System.IO (stdin)
 import qualified Data.ByteString.Char8 as B8
 
@@ -19,7 +18,7 @@ import qualified Data.Enumerator.List as E (map, foldM, mapAccum)
 import qualified Data.Enumerator.Text as E (enumHandle)
 
 import HtmlCat.Html (html)
-import HtmlCat.Color (parseConsoleString, defaultConsoleState, ConsoleState(..), runHtml, ColorScheme(..))
+import HtmlCat.Color (parseConsoleString, defaultConsoleState, ConsoleState(..), convHtml, ColorScheme(..))
 import Snap.EventSource (ServerEvent(..), eventSourceApp)
 
 feedStdIn :: Chan ServerEvent -> ColorScheme -> IO ()
@@ -49,7 +48,7 @@ sourceStdIn = E.enumHandle stdin
 colorConv :: MonadIO m => ColorScheme -> Enumeratee Text Text m a
 colorConv cols = E.mapAccum f defaultConsoleState { colorScheme = cols }
   where
-    f state text = swap $ runHtml state $ parseConsoleString text
+    f state text = convHtml state $ parseConsoleString text
 
 textsToEventSource :: Monad m => Enumeratee Text ServerEvent m a
 textsToEventSource = E.map f

@@ -6,7 +6,6 @@ import Control.Monad.Trans (MonadIO(..))
 import Control.Monad.Trans.Resource (Resource(..))
 import Data.List (mapAccumL)
 import Data.Text (Text)
-import Data.Tuple (swap)
 import Prelude hiding (lines)
 import System.IO (stdin)
 import qualified Data.Text as T
@@ -23,7 +22,7 @@ import qualified Blaze.ByteString.Builder.Char.Utf8 as B
 import qualified Data.Conduit.List as CL
 
 import HtmlCat.Html (html)
-import HtmlCat.Color (parseConsoleString, defaultConsoleState, ConsoleState(..), runHtml, ColorScheme(..))
+import HtmlCat.Color (parseConsoleString, defaultConsoleState, ConsoleState(..), convHtml, ColorScheme(..))
 
 feedStdIn :: Chan ServerEvent -> ColorScheme-> IO ()
 feedStdIn chan cols = void . forkIO . runResourceT $
@@ -67,7 +66,7 @@ colorConv :: Resource m => ColorScheme -> Conduit [Text] m [Text]
 colorConv cols = conduitState defaultConsoleState { colorScheme = cols } push close
   where
     push st inp = do
-        let (nst, htmls) = mapAccumL ((swap.).runHtml) st (map parseConsoleString inp)
+        let (nst, htmls) = mapAccumL convHtml st (map parseConsoleString inp)
         return $ StateProducing nst [htmls]
     close _ = return []
 

@@ -6,11 +6,12 @@ module HtmlCat.Color
     , ConsoleState(colorScheme), defaultConsoleState, ColorScheme(..)
     ) where
 
-import Data.Attoparsec.Text
-import Control.Applicative
-import Control.Monad.State
-import Data.Data
+import Data.Attoparsec.Text (Parser, parseOnly, char, anyChar, string, digit, sepBy, try)
+import Control.Applicative ((<|>), (<$), pure, many)
+import Control.Monad.State (State, get, put, runState, foldM)
+import Data.Data (Data, Typeable)
 import Data.Text (Text)
+import Data.Tuple (swap)
 import qualified Data.Map as M
 import qualified Data.Text as T
 
@@ -109,20 +110,23 @@ defaultConsoleState = ConsoleStateV {
 toHtml :: [ConsoleString] -> Text
 toHtml = fst . runHtml defaultConsoleState
 
-runHtml :: ConsoleState -> [ConsoleString] -> (Text, ConsoleState)
-runHtml s cs = foldM convHtml T.empty cs `runState` s
+convHtml :: ConsoleState -> [ConsoleString] -> (ConsoleState, Text)
+convHtml = (swap .) . runHtml
 
-convHtml :: Text -> ConsoleString -> State ConsoleState Text
-convHtml r (StateChangeV ResetV)       = (r <$) $ get >>= \s -> put defaultConsoleState { colorScheme = colorScheme s }
-convHtml r (StateChangeV BrightV)      = (r <$) $ get >>= \s -> put s { isBright = True }
-convHtml r (StateChangeV DimV)         = pure r -- Ignore
-convHtml r (StateChangeV UnderscoreV)  = (r <$) $ get >>= \s -> put s { isUnderscore = True }
-convHtml r (StateChangeV BlinkV)       = (r <$) $ get >>= \s -> put s { isBlink = True }
-convHtml r (StateChangeV ReverseV)     = (r <$) $ get >>= \s -> put s { fgColor = bgColor s, bgColor = fgColor s }
-convHtml r (StateChangeV HiddenV)      = pure r -- Ignore
-convHtml r (StateChangeV (FgColorV c)) = (r <$) $ get >>= \s -> put s { fgColor = c }
-convHtml r (StateChangeV (BgColorV c)) = (r <$) $ get >>= \s -> put s { bgColor = c }
-convHtml r (ConsoleStringV ss)         = do
+runHtml :: ConsoleState -> [ConsoleString] -> (Text, ConsoleState)
+runHtml s cs = foldM stepHtml T.empty cs `runState` s
+
+stepHtml :: Text -> ConsoleString -> State ConsoleState Text
+stepHtml r (StateChangeV ResetV)       = (r <$) $ get >>= \s -> put defaultConsoleState { colorScheme = colorScheme s }
+stepHtml r (StateChangeV BrightV)      = (r <$) $ get >>= \s -> put s { isBright = True }
+stepHtml r (StateChangeV DimV)         = pure r -- Ignore
+stepHtml r (StateChangeV UnderscoreV)  = (r <$) $ get >>= \s -> put s { isUnderscore = True }
+stepHtml r (StateChangeV BlinkV)       = (r <$) $ get >>= \s -> put s { isBlink = True }
+stepHtml r (StateChangeV ReverseV)     = (r <$) $ get >>= \s -> put s { fgColor = bgColor s, bgColor = fgColor s }
+stepHtml r (StateChangeV HiddenV)      = pure r -- Ignore
+stepHtml r (StateChangeV (FgColorV c)) = (r <$) $ get >>= \s -> put s { fgColor = c }
+stepHtml r (StateChangeV (BgColorV c)) = (r <$) $ get >>= \s -> put s { bgColor = c }
+stepHtml r (ConsoleStringV ss)         = do
     st <- get
     return $ r +++ "<span style='" +++ style st +++ "'>" +++ esc ss +++ "</span>"
 
