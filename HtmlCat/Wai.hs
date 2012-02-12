@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module HtmlCat.Wai (feedStdIn, runHtmlCat) where
+import Control.Arrow (second)
 import Control.Concurrent (Chan, writeChan, forkIO)
 import Control.Monad (void)
 import Control.Monad.Trans (MonadIO(..))
@@ -11,7 +12,7 @@ import System.IO (stdin)
 import qualified Data.Text as T
 
 import Data.Conduit (($$), ($=), ResourceIO, Source, Sink, SinkIOResult(..), Conduit, runResourceT, sinkIO, conduitState, ConduitStateResult(..))
-import Data.Conduit.Binary (sourceHandle)
+import Data.Conduit.Binary (sourceHandle, lines)
 import Data.Conduit.Text (decode, utf8)
 import Network.HTTP.Types (headerContentType, statusOK, statusNotFound)
 import Network.Wai (Application, Request(..), Response(..), responseLBS)
@@ -26,7 +27,7 @@ import HtmlCat.Color (parseConsoleString, defaultConsoleState, ConsoleState(..),
 
 feedStdIn :: Chan ServerEvent -> ColorScheme-> IO ()
 feedStdIn chan cols = void . forkIO . runResourceT $
-  sourceStdIn $= lines $= colorConv cols $= textsToEventSource $$ sinkChan chan
+  sourceStdIn $= colorConv cols $= textsToEventSource $$ sinkChan chan
 
 runHtmlCat :: Chan ServerEvent -> String -> Int -> ColorScheme -> IO ()
 runHtmlCat chan host port cols =
@@ -54,28 +55,19 @@ app404 :: Application
 app404 _ = return $ responseLBS statusNotFound [] "Not found"
 
 sourceStdIn :: ResourceIO m => Source m Text
-sourceStdIn = sourceHandle stdin $= decode utf8
+sourceStdIn = sourceHandle stdin $= lines $= decode utf8
 
-lines :: Resource m => Conduit Text m [Text]
-lines = CL.concatMapAccum (\txt prv ->
-    let (r, m) = T.span (/= '\n') $ T.reverse $ T.append prv txt
-    in (T.reverse r, [T.lines $ T.reverse m])
-    ) T.empty
-
-colorConv :: Resource m => ColorScheme -> Conduit [Text] m [Text]
-colorConv cols = conduitState defaultConsoleState { colorScheme = cols } push close
+colorConv :: Resource m => ColorScheme -> Conduit Text m Text
+colorConv cols = CL.concatMapAccum f defaultConsoleState { colorScheme = cols }
   where
-    push st inp = do
-        let (nst, htmls) = mapAccumL convHtml st (map parseConsoleString inp)
-        return $ StateProducing nst [htmls]
-    close _ = return []
+    f text state = second return $ convHtml state $ parseConsoleString text
 
-textsToEventSource :: Monad m => Conduit [Text] m ServerEvent
+textsToEventSource :: Monad m => Conduit Text m ServerEvent
 textsToEventSource = CL.map f
   where
-    f texts = ServerEvent { eventName = Nothing
-                          , eventId   = Nothing
-                          , eventData = map B.fromText texts }
+    f text = ServerEvent { eventName = Nothing
+                         , eventId   = Nothing
+                         , eventData = [B.fromText text] }
 
 sinkChan :: ResourceIO m => Chan a -> Sink a m ()
 sinkChan chan = sinkIO noop (const noop) push return
