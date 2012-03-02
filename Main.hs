@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, RecordWildCards, CPP, DeriveDataTypeable #-}
 module Main where
-import Control.Concurrent (forkIO, newChan)
+import Control.Concurrent (forkIO)
 import Control.Exception (IOException, try)
 import Control.Monad (void)
 import Data.Foldable (forM_)
@@ -25,7 +25,7 @@ main = do
   putStrLn url
   whenJust _exec $ \exec ->
     forkIO $ void $ rawSystem exec [url]
-  chan <- newChan
+  chan <- newHtmlCatChan
   feedStdIn chan _cols
   runHtmlCat chan _host port _cols
   where
