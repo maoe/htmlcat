@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module HtmlCat.Snap (feedStdIn, runHtmlCat) where
-import Control.Concurrent (Chan, writeChan, forkIO)
+module HtmlCat.Snap (feedStdIn, runHtmlCat, newHtmlCatChan) where
+import Control.Applicative ((<*))
+import Control.Concurrent (forkIO)
 import Control.Monad (void)
 import Control.Monad.Trans (MonadIO(..))
 import Data.Text (Text)
@@ -19,19 +20,20 @@ import qualified Data.Enumerator.Text as E (enumHandle)
 
 import HtmlCat.Html (html)
 import HtmlCat.Color (parseConsoleString, defaultConsoleState, ConsoleState(..), convHtml, ColorScheme(..))
+import HtmlCat.HtmlCatChan (HtmlCatChan, newHtmlCatChan, notifyClient, writeHtmlCatChan, htmlCatChan)
 import Snap.EventSource (ServerEvent(..), eventSourceApp)
 
-feedStdIn :: Chan ServerEvent -> ColorScheme -> IO ()
+feedStdIn :: HtmlCatChan ServerEvent -> ColorScheme -> IO ()
 feedStdIn chan cols = void . forkIO $ E.run_ $
   sourceStdIn $= colorConv cols $= textsToEventSource $$ sinkChan chan
 
-runHtmlCat :: Chan ServerEvent -> String -> Int -> ColorScheme -> IO ()
+runHtmlCat :: HtmlCatChan ServerEvent -> String -> Int -> ColorScheme -> IO ()
 runHtmlCat chan host port cols =
   simpleHttpServe (setPort port $ setBind (B8.pack host)
                                 $ defaultConfig :: Config Snap ())
                   (app chan cols)
 
-app :: Chan ServerEvent -> ColorScheme -> Snap ()
+app :: HtmlCatChan ServerEvent -> ColorScheme -> Snap ()
 app chan cols = route [ ("",       appTop cols)
                       , ("stream", appStream chan)
                       ]
@@ -39,8 +41,8 @@ app chan cols = route [ ("",       appTop cols)
 appTop :: ColorScheme -> Snap ()
 appTop = writeBuilder . renderHtmlBuilder . html
 
-appStream :: Chan ServerEvent -> Snap ()
-appStream = eventSourceApp
+appStream :: HtmlCatChan ServerEvent -> Snap ()
+appStream chan = eventSourceApp (htmlCatChan chan) <* liftIO (notifyClient chan)
 
 sourceStdIn :: MonadIO m => Enumerator Text m a
 sourceStdIn = E.enumHandle stdin
@@ -57,7 +59,7 @@ textsToEventSource = E.map f
                          , eventId   = Nothing
                          , eventData = [B.fromText text] }
 
-sinkChan :: MonadIO m => Chan a -> Iteratee a m ()
+sinkChan :: MonadIO m => HtmlCatChan a -> Iteratee a m ()
 sinkChan chan = E.foldM go ()
   where
-    go () a = liftIO $ writeChan chan a
+    go () a = liftIO $ writeHtmlCatChan chan a
